@@ -8,6 +8,14 @@ import (
 	"time"
 
 	"github.com/go-kit/log"
+	"github.com/mum4k/termdash"
+	"github.com/mum4k/termdash/cell"
+	"github.com/mum4k/termdash/container"
+	"github.com/mum4k/termdash/linestyle"
+	"github.com/mum4k/termdash/terminal/tcell"
+	"github.com/mum4k/termdash/terminal/terminalapi"
+	"github.com/mum4k/termdash/widgetapi"
+	"github.com/mum4k/termdash/widgets/linechart"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/config"
@@ -17,6 +25,52 @@ import (
 	"github.com/prometheus/prometheus/scrape"
 	"github.com/prometheus/prometheus/tsdb"
 )
+
+// playLineChart continuously adds values to the LineChart, once every delay.
+// Exits when the context expires.
+func drawLineChart(lc *linechart.LineChart, series promql.Series) {
+	input := make([]float64, len(series.Floats))
+	for i, f := range series.Floats {
+		input[i] = f.F
+	}
+	if err := lc.Series("first", input,
+		linechart.SeriesCellOpts(cell.FgColor(cell.ColorNumber(33))),
+		linechart.SeriesXLabels(map[int]string{
+			0: "zero",
+		}),
+	); err != nil {
+		panic(err)
+	}
+}
+
+func dash(ctx context.Context, cancel context.CancelFunc, w widgetapi.Widget) {
+	t, err := tcell.New()
+	if err != nil {
+		panic(err)
+	}
+	defer t.Close()
+
+	const redrawInterval = 250 * time.Millisecond
+	c, err := container.New(
+		t,
+		container.Border(linestyle.Light),
+		container.BorderTitle("PRESS Q TO QUIT"),
+		container.PlaceWidget(w),
+	)
+	if err != nil {
+		panic(err)
+	}
+
+	quitter := func(k *terminalapi.Keyboard) {
+		if k.Key == 'q' || k.Key == 'Q' {
+			cancel()
+		}
+	}
+
+	if err := termdash.Run(ctx, t, c, termdash.KeyboardSubscriber(quitter), termdash.RedrawInterval(redrawInterval)); err != nil {
+		panic(err)
+	}
+}
 
 func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
@@ -111,26 +165,44 @@ func main() {
 	}
 	engine := promql.NewEngine(opts)
 
-	for {
-		select {
-		case <-time.After(time.Second):
-			fmt.Println("---------------------")
-			now := time.Now()
-			q, err := engine.NewRangeQuery(ctx, db, promql.NewPrometheusQueryOpts(false, time.Minute*5), `{__name__!=""}`, now.Add(-time.Second*3), now, time.Second)
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "error creating query: %v\n", err)
-				os.Exit(1)
-			}
-			defer q.Close()
-			r := q.Exec(ctx)
-			if r.Err != nil {
-				fmt.Fprintf(os.Stderr, "error executing query: %v\n", r.Err)
-				os.Exit(1)
-			}
-			fmt.Println(r.String())
-		case <-ctx.Done():
-			fmt.Println("goodbye")
-			return
-		}
+	lc, err := linechart.New(
+		linechart.AxesCellOpts(cell.FgColor(cell.ColorRed)),
+		linechart.YLabelCellOpts(cell.FgColor(cell.ColorGreen)),
+		linechart.XLabelCellOpts(cell.FgColor(cell.ColorCyan)),
+	)
+	if err != nil {
+		panic(err)
 	}
+
+	go func() {
+		for {
+			select {
+			case <-time.After(time.Second):
+				now := time.Now()
+				q, err := engine.NewRangeQuery(ctx, db, promql.NewPrometheusQueryOpts(false, time.Minute*5), `rate(conduit_pipeline_execution_duration_seconds_count[1m])`, now.Add(-time.Minute*10), now, time.Second)
+				if err != nil {
+					fmt.Fprintf(os.Stderr, "error creating query: %v\n", err)
+					os.Exit(1)
+				}
+				defer q.Close()
+				r := q.Exec(ctx)
+				if r.Err != nil {
+					fmt.Fprintf(os.Stderr, "error executing query: %v\n", r.Err)
+					os.Exit(1)
+				}
+				m, err := r.Matrix()
+				if err != nil {
+					continue
+				}
+				if len(m) > 0 {
+					drawLineChart(lc, m[0])
+				}
+			case <-ctx.Done():
+				fmt.Println("goodbye")
+				return
+			}
+		}
+	}()
+
+	dash(ctx, cancel, lc)
 }
