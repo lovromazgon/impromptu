@@ -106,7 +106,7 @@ func (p *Prom) init(cfg config.Config, promqlEngineOpts promql.EngineOpts) (err 
 	defer func() {
 		if err != nil {
 			if dbErr := db.Close(); dbErr != nil {
-				p.logger.Log("msg", "error closing storage", "err", dbErr)
+				_ = p.logger.Log("msg", "error closing storage", "err", dbErr)
 			}
 		}
 	}()

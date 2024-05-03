@@ -2,6 +2,8 @@ package impromptu
 
 import (
 	"context"
+	"fmt"
+
 	"github.com/lovromazgon/impromptu/dash"
 	"github.com/lovromazgon/impromptu/prom"
 	"golang.org/x/sync/errgroup"
@@ -20,12 +22,12 @@ func New() (*Impromptu, error) {
 		prom.WithQuery("rate(conduit_pipeline_execution_duration_seconds_count[5s])", 0, 0),
 	)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error creating prom: %w", err)
 	}
 
 	d, err := dash.New()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error creating dash: %w", err)
 	}
 
 	return &Impromptu{

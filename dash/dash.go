@@ -3,6 +3,8 @@ package dash
 import (
 	"context"
 	"fmt"
+	"time"
+
 	"github.com/mum4k/termdash"
 	"github.com/mum4k/termdash/cell"
 	"github.com/mum4k/termdash/container"
@@ -12,7 +14,6 @@ import (
 	"github.com/mum4k/termdash/widgets/linechart"
 	"github.com/prometheus/prometheus/promql"
 	"golang.org/x/sync/errgroup"
-	"time"
 )
 
 const redrawInterval = 250 * time.Millisecond
@@ -92,7 +93,7 @@ func (d *Dash) Run(ctx context.Context, in <-chan promql.Matrix) error {
 				}
 				err := d.drawLineChart(data)
 				if err != nil {
-					return fmt.Errorf("error drawing line chart: %w", err)
+					return err
 				}
 			}
 		}
@@ -107,9 +108,13 @@ func (d *Dash) drawLineChart(matrix promql.Matrix) error {
 	for i, f := range series.Floats {
 		input[i] = f.F
 	}
-	return d.chart.Series(
+	err := d.chart.Series(
 		"first",
 		input,
 		linechart.SeriesCellOpts(cell.FgColor(cell.ColorGreen)),
 	)
+	if err != nil {
+		return fmt.Errorf("error drawing line chart: %w", err)
+	}
+	return nil
 }
