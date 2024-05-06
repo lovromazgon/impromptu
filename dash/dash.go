@@ -2,7 +2,12 @@ package dash
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"github.com/lovromazgon/impromptu/opt"
+	"golang.org/x/time/rate"
+	"slices"
+	"sync"
 	"time"
 
 	"github.com/mum4k/termdash"
@@ -19,22 +24,18 @@ import (
 const redrawInterval = 250 * time.Millisecond
 
 type Dash struct {
-	terminal  *tcell.Terminal
-	container *container.Container
-	chart     *linechart.LineChart
+	queryRange    time.Duration
+	queryInterval time.Duration
+
+	chart      *linechart.LineChart
+	timestamps []int64
+
+	// TODO vacuum old data
+	data map[int64]float64
+	m    sync.Mutex
 }
 
-func New() (_ *Dash, err error) {
-	t, err := tcell.New()
-	if err != nil {
-		return nil, fmt.Errorf("error creating terminal: %w", err)
-	}
-	defer func() {
-		if err != nil {
-			t.Close()
-		}
-	}()
-
+func New(options opt.Options) (_ *Dash, err error) {
 	lc, err := linechart.New(
 		linechart.AxesCellOpts(cell.FgColor(cell.ColorCyan)),
 		linechart.YLabelCellOpts(cell.FgColor(cell.ColorCyan)),
@@ -44,20 +45,24 @@ func New() (_ *Dash, err error) {
 		return nil, fmt.Errorf("error creating line chart: %w", err)
 	}
 
-	c, err := container.New(
-		t,
-		container.Border(linestyle.Light),
-		container.BorderTitle("PRESS Q TO QUIT"),
-		container.PlaceWidget(lc),
-	)
-	if err != nil {
-		return nil, fmt.Errorf("error creating container: %w", err)
+	count := int(options.QueryRange / options.QueryInterval)
+	timestamps := make([]int64, count)
+	series := make([]float64, count)
+	now := time.Now().Truncate(time.Second)
+	for i := range timestamps {
+		timestamps[i] = now.Add(-options.QueryRange + time.Duration(i)*options.QueryInterval).UnixMilli()
 	}
 
+	lc.Series("first", series)
+
 	return &Dash{
-		terminal:  t,
-		container: c,
-		chart:     lc,
+		queryRange:    options.QueryRange,
+		queryInterval: options.QueryInterval,
+
+		chart:      lc,
+		timestamps: timestamps,
+
+		data: make(map[int64]float64),
 	}, nil
 }
 
@@ -65,56 +70,127 @@ func (d *Dash) Run(ctx context.Context, in <-chan promql.Matrix) error {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	group, ctx := errgroup.WithContext(ctx)
-
 	quitter := func(k *terminalapi.Keyboard) {
 		if k.Key == 'q' || k.Key == 'Q' {
 			cancel()
 		}
 	}
 
+	terminal, err := tcell.New()
+	if err != nil {
+		return fmt.Errorf("error creating terminal: %w", err)
+	}
+	defer terminal.Close()
+	c, err := container.New(
+		terminal,
+		container.Border(linestyle.Light),
+		container.BorderTitle("PRESS Q TO QUIT"),
+		container.PlaceWidget(d.chart),
+	)
+	if err != nil {
+		return fmt.Errorf("error creating container: %w", err)
+	}
+
+	group, ctx := errgroup.WithContext(ctx)
 	group.Go(func() error {
-		return termdash.Run(
-			ctx,
-			d.terminal,
-			d.container,
-			termdash.KeyboardSubscriber(quitter),
-			termdash.RedrawInterval(redrawInterval),
-		)
+		return d.drawLineChart(ctx)
 	})
 	group.Go(func() error {
 		for {
 			select {
 			case <-ctx.Done():
-				return nil
+				return ctx.Err()
 			case data, ok := <-in:
 				if !ok {
 					return nil
 				}
-				err := d.drawLineChart(data)
-				if err != nil {
-					return err
-				}
+				d.handlePromMatrix(data)
 			}
 		}
 	})
 
-	return group.Wait()
+	err = termdash.Run(
+		ctx,
+		terminal,
+		c,
+		termdash.KeyboardSubscriber(quitter),
+		termdash.RedrawInterval(redrawInterval),
+	)
+	return errors.Join(err, group.Wait())
 }
 
-func (d *Dash) drawLineChart(matrix promql.Matrix) error {
+func (d *Dash) handlePromMatrix(matrix promql.Matrix) {
+	d.m.Lock()
+	defer d.m.Unlock()
+
 	series := matrix[0] // TODO handle multiple series
-	input := make([]float64, len(series.Floats))
-	for i, f := range series.Floats {
-		input[i] = f.F
+	for _, f := range series.Floats {
+		t := time.UnixMilli(f.T).Truncate(time.Second).UnixMilli()
+		d.data[t] = f.F
 	}
-	err := d.chart.Series(
-		"first",
-		input,
-		linechart.SeriesCellOpts(cell.FgColor(cell.ColorGreen)),
-	)
-	if err != nil {
-		return fmt.Errorf("error drawing line chart: %w", err)
+}
+
+func (d *Dash) drawLineChart(ctx context.Context) error {
+	rateLimit := rate.NewLimiter(rate.Every(d.queryInterval), 1)
+	series := make([]float64, len(d.timestamps))
+	for {
+		err := rateLimit.Wait(ctx)
+		if err != nil {
+			return err
+		}
+
+		moveIndex := d.updateTimestamps()
+		copy(series, series[moveIndex:])
+		for i := len(series) - moveIndex; i < len(series); i++ {
+			series[i] = 0
+		}
+
+		d.m.Lock()
+		for t, f := range d.data {
+			index, ok := slices.BinarySearch(d.timestamps, t)
+			if !ok {
+				continue
+			}
+			series[index] = f
+		}
+		d.m.Unlock()
+
+		err = d.chart.Series(
+			"first",
+			series,
+			linechart.SeriesCellOpts(cell.FgColor(cell.ColorGreen)),
+			linechart.SeriesXLabels(d.xLabels()),
+		)
+		if err != nil {
+			return fmt.Errorf("error drawing line chart: %w", err)
+		}
 	}
-	return nil
+}
+
+func (d *Dash) updateTimestamps() int {
+	now := time.Now().Truncate(time.Second)
+	start := now.Add(-d.queryRange).UnixMilli()
+	startIndex := len(d.timestamps)
+	for i := range d.timestamps {
+		if d.timestamps[i] == start {
+			startIndex = i
+			break
+		}
+	}
+	if startIndex < len(d.timestamps) {
+		copy(d.timestamps, d.timestamps[startIndex:])
+	}
+	for i := len(d.timestamps) - startIndex; i < len(d.timestamps); i++ {
+		d.timestamps[i] = start + (int64(i) * d.queryInterval.Milliseconds())
+	}
+	return startIndex
+}
+
+func (d *Dash) xLabels() map[int]string {
+	labels := make(map[int]string, len(d.timestamps))
+	for i, t := range d.timestamps {
+		// TODO cache labels
+		labels[i] = time.UnixMilli(t).Format("15:04:05")
+	}
+	return labels
 }

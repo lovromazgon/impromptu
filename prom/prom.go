@@ -2,8 +2,8 @@ package prom
 
 import (
 	"context"
-	"errors"
 	"fmt"
+	"github.com/lovromazgon/impromptu/opt"
 	"net/url"
 	"time"
 
@@ -32,17 +32,12 @@ type Prom struct {
 	out           chan promql.Matrix
 }
 
-func New(opts ...Opt) (*Prom, error) {
-	options := defaultOptions
-	for _, o := range opts {
-		o.opt(&options)
-	}
-
-	logger := log.NewLogfmtLogger(options.loggerWriter)
+func New(options opt.Options) (*Prom, error) {
+	logger := log.NewLogfmtLogger(options.LoggerWriter)
 
 	cfg := config.DefaultConfig
-	cfg.GlobalConfig.ScrapeInterval = model.Duration(options.scrapeInterval)
-	cfg.GlobalConfig.EvaluationInterval = model.Duration(options.evaluationInterval)
+	cfg.GlobalConfig.ScrapeInterval = model.Duration(options.ScrapeInterval)
+	cfg.GlobalConfig.EvaluationInterval = model.Duration(options.EvaluationInterval)
 
 	scrapeCfg := config.DefaultScrapeConfig
 	scrapeCfg.JobName = "impromptu"
@@ -54,7 +49,7 @@ func New(opts ...Opt) (*Prom, error) {
 		MaxSamples:         50000000,
 		Timeout:            time.Minute,
 		ActiveQueryTracker: NewSequentialQueryTracker(),
-		LookbackDelta:      options.queryRange,
+		LookbackDelta:      options.QueryRange,
 		NoStepSubqueryIntervalFn: func(_ int64) int64 {
 			return int64(time.Duration(cfg.GlobalConfig.EvaluationInterval) / time.Millisecond)
 		},
@@ -65,7 +60,7 @@ func New(opts ...Opt) (*Prom, error) {
 		EnablePerStepStats:   false,
 	}
 
-	targetURL, err := url.Parse(options.targetURL)
+	targetURL, err := url.Parse(options.TargetURL)
 	if err != nil {
 		return nil, fmt.Errorf("error parsing target URL: %w", err)
 	}
@@ -79,9 +74,9 @@ func New(opts ...Opt) (*Prom, error) {
 		logger: logger,
 		labels: l,
 
-		queryString:   options.queryString,
-		queryRange:    options.queryRange,
-		queryInterval: options.queryInterval,
+		queryString:   options.QueryString,
+		queryRange:    options.QueryRange,
+		queryInterval: options.QueryInterval,
 	}
 
 	err = p.init(cfg, promqlEngineOpts)
@@ -129,7 +124,7 @@ func (p *Prom) init(cfg config.Config, promqlEngineOpts promql.EngineOpts) (err 
 	promqlEngine := promql.NewEngine(promqlEngineOpts)
 
 	now := time.Now()
-	q, err := p.promqlEngine.NewRangeQuery(
+	q, err := promqlEngine.NewRangeQuery(
 		context.Background(),
 		db,
 		promql.NewPrometheusQueryOpts(false, 0),
@@ -177,15 +172,12 @@ func (p *Prom) Run(ctx context.Context) error {
 		return nil
 	})
 	group.Go(func() error {
-		rateLimit := rate.NewLimiter(rate.Every(time.Second), 1)
+		rateLimit := rate.NewLimiter(rate.Every(p.queryInterval), 1)
 		var previousQuery promql.Query
 		defer close(p.out)
 		for {
 			err := rateLimit.Wait(ctx)
 			if err != nil {
-				if errors.Is(err, context.Canceled) {
-					return nil
-				}
 				return err
 			}
 			q, err := p.execQuery(ctx)
