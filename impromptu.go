@@ -11,8 +11,6 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-// rate(conduit_pipeline_execution_duration_seconds_count[5s])
-
 type Impromptu struct {
 	prom *prom.Prom
 	dash *dash.Dash

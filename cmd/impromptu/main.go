@@ -13,6 +13,8 @@ import (
 	"github.com/lovromazgon/impromptu/opt"
 )
 
+var version = "(devel)"
+
 const usage = `Usage:
     impromptu -t URL -q PROMQL_QUERY [-i DURATION] [-r DURATION]
 
@@ -21,6 +23,7 @@ Options:
     -q, --query-string PROMQL_QUERY    Query to execute against the metrics
     -i, --query-interval DURATION      Interval to fetch metrics at [default: 1s]
     -r, --query-range DURATION         Range of the query [default: 5m]
+    -v, --version                      Print version information
 
 URL represents an endpoint that serves Prometheus metrics in text format.
 
@@ -35,7 +38,7 @@ function. It represents a time interval, e.g. "5m" for 5 minutes, "1h" for 1
 hour, "30s" for 30 seconds, "1h 2m 3s" for 1 hour, 2 minutes and 3 seconds etc.
 
 Example:
-    $ impromptu -t http://demo.do.prometheus.io:9100/metrics -q "rate(node_cpu_seconds_total{mode=\"idle\"}[5s])"`
+    $ impromptu -t http://demo.do.prometheus.io:9100/metrics -q "rate(node_cpu_seconds_total{mode=\"idle\"}[5s])" -r 1m`
 
 func main() {
 	opts := parseOptions()
@@ -64,6 +67,7 @@ func parseOptions() opt.Options {
 		queryString   string
 		queryInterval time.Duration
 		queryRange    time.Duration
+		printVersion  bool
 	)
 
 	flag.StringVar(&targetURL, "target-url", "", "Fetch metrics from the specified URL")
@@ -74,8 +78,15 @@ func parseOptions() opt.Options {
 	flag.DurationVar(&queryInterval, "i", opt.Defaults.QueryInterval, "Interval to fetch metrics at")
 	flag.DurationVar(&queryRange, "query-range", opt.Defaults.QueryRange, "Range of the query")
 	flag.DurationVar(&queryRange, "r", opt.Defaults.QueryRange, "Range of the query")
+	flag.BoolVar(&printVersion, "version", false, "Print version information")
+	flag.BoolVar(&printVersion, "v", false, "Print version information")
 	flag.Usage = func() { _, _ = fmt.Fprintf(os.Stderr, "%s\n", usage) }
 	flag.Parse()
+
+	if printVersion {
+		fmt.Printf("impromptu %s\n", version)
+		os.Exit(0)
+	}
 
 	if targetURL == "" || queryString == "" {
 		flag.Usage()

@@ -1,6 +1,8 @@
+VERSION=$(shell git describe --tags --dirty --always)
+
 .PHONY: build
 build:
-	go build -o impromptu cmd/impromptu/main.go
+	go build -ldflags "-X 'main.version=${VERSION}'" -o impromptu cmd/impromptu/main.go
 
 .PHONY: test
 test:
