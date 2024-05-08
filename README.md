@@ -1,6 +1,6 @@
 # Impromptu
 
-[![License](https://img.shields.io/badge/license-MIT-blue)](https://github.com/ConduitIO/conduit/blob/main/LICENSE.md)
+[![License](https://img.shields.io/github/license/lovromazgon/impromptu)](https://github.com/ConduitIO/conduit/blob/main/LICENSE)
 [![Test](https://github.com/lovromazgon/impromptu/actions/workflows/test.yml/badge.svg)](https://github.com/lovromazgon/impromptu/actions/workflows/test.yml)
 [![Go Report Card](https://goreportcard.com/badge/github.com/lovromazgon/impromptu)](https://goreportcard.com/report/github.com/lovromazgon/impromptu)
 
