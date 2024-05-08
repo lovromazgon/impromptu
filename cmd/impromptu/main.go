@@ -35,7 +35,7 @@ function. It represents a time interval, e.g. "5m" for 5 minutes, "1h" for 1
 hour, "30s" for 30 seconds, "1h 2m 3s" for 1 hour, 2 minutes and 3 seconds etc.
 
 Example:
-    $ impromptu -t http://localhost:8080/metrics -q "rate(conduit_pipeline_execution_duration_seconds_count[5s])"`
+    $ impromptu -t http://demo.do.prometheus.io:9100/metrics -q "rate(node_cpu_seconds_total{mode=\"idle\"}[5s])"`
 
 func main() {
 	opts := parseOptions()
