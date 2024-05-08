@@ -1,5 +1,5 @@
 builds:
-  - main: ./cmd/connector/main.go
+  - main: ./cmd/impromptu/main.go
     goos:
       - darwin
       - linux
