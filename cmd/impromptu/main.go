@@ -17,10 +17,10 @@ const usage = `Usage:
     impromptu -t URL -q PROMQL_QUERY [-i DURATION] [-r DURATION]
 
 Options:
-    -t URL, --target-url URL                        Fetch metrics from the specified URL
-    -q PROMQL_QUERY, --query-string PROMQL_QUERY    Query to execute against the metrics
-    -i DURATION, --query-interval DURATION          Interval to fetch metrics at [default: 1s]
-    -r DURATION, --query-range DURATION             Range of the query [default: 5m]
+    -t, --target-url URL               Fetch metrics from the specified URL
+    -q, --query-string PROMQL_QUERY    Query to execute against the metrics
+    -i, --query-interval DURATION      Interval to fetch metrics at [default: 1s]
+    -r, --query-range DURATION         Range of the query [default: 5m]
 
 URL represents an endpoint that serves Prometheus metrics in text format.
 
