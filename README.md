@@ -17,6 +17,11 @@ https://github.com/lovromazgon/impromptu/assets/8320753/088736b7-ac20-479e-b53c-
 
 Download the binary from the [latest release](https://github.com/lovromazgon/impromptu/releases/latest).
 
+> [!NOTE]
+> When trying to run Impromptu on MacOS you will get a warning about a safety issue.
+> That's because Impromptu is currently not a signed binary, you have to do some
+> [extra steps](https://support.apple.com/en-us/102445#openanyway) to make it run.
+
 Once you have downloaded impromptu, you can try it out using this runnable example:
 
 ```sh
