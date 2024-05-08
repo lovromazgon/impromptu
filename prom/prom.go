@@ -3,11 +3,12 @@ package prom
 import (
 	"context"
 	"fmt"
-	"github.com/lovromazgon/impromptu/opt"
 	"net/url"
+	"os"
 	"time"
 
 	"github.com/go-kit/log"
+	"github.com/lovromazgon/impromptu/opt"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/config"
@@ -33,11 +34,10 @@ type Prom struct {
 }
 
 func New(options opt.Options) (*Prom, error) {
-	logger := log.NewLogfmtLogger(options.LoggerWriter)
+	logger := log.NewLogfmtLogger(os.Stderr)
 
 	cfg := config.DefaultConfig
 	cfg.GlobalConfig.ScrapeInterval = model.Duration(options.ScrapeInterval)
-	cfg.GlobalConfig.EvaluationInterval = model.Duration(options.EvaluationInterval)
 
 	scrapeCfg := config.DefaultScrapeConfig
 	scrapeCfg.JobName = "impromptu"
@@ -47,7 +47,7 @@ func New(options opt.Options) (*Prom, error) {
 		Logger:             log.With(logger, "component", "query engine"),
 		Reg:                prometheus.DefaultRegisterer,
 		MaxSamples:         50000000,
-		Timeout:            time.Minute,
+		Timeout:            options.QueryInterval * 2,
 		ActiveQueryTracker: NewSequentialQueryTracker(),
 		LookbackDelta:      options.QueryRange,
 		NoStepSubqueryIntervalFn: func(_ int64) int64 {
@@ -89,7 +89,7 @@ func New(options opt.Options) (*Prom, error) {
 
 func (p *Prom) init(cfg config.Config, promqlEngineOpts promql.EngineOpts) (err error) {
 	db, err := tsdb.Open(
-		"./.impromptu_data",
+		opt.DataPath,
 		log.With(p.logger, "component", "tsdb"),
 		prometheus.DefaultRegisterer,
 		tsdb.DefaultOptions(),

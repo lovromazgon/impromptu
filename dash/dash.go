@@ -4,12 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/lovromazgon/impromptu/opt"
-	"golang.org/x/time/rate"
 	"slices"
 	"sync"
 	"time"
 
+	"github.com/lovromazgon/impromptu/opt"
 	"github.com/mum4k/termdash"
 	"github.com/mum4k/termdash/cell"
 	"github.com/mum4k/termdash/container"
@@ -19,6 +18,7 @@ import (
 	"github.com/mum4k/termdash/widgets/linechart"
 	"github.com/prometheus/prometheus/promql"
 	"golang.org/x/sync/errgroup"
+	"golang.org/x/time/rate"
 )
 
 const redrawInterval = 250 * time.Millisecond
@@ -48,12 +48,15 @@ func New(options opt.Options) (_ *Dash, err error) {
 	count := int(options.QueryRange / options.QueryInterval)
 	timestamps := make([]int64, count)
 	series := make([]float64, count)
-	now := time.Now().Truncate(time.Second)
+	now := time.Now().Truncate(options.ScrapeInterval)
 	for i := range timestamps {
 		timestamps[i] = now.Add(-options.QueryRange + time.Duration(i)*options.QueryInterval).UnixMilli()
 	}
 
-	lc.Series("first", series)
+	err = lc.Series("first", series)
+	if err != nil {
+		return nil, fmt.Errorf("error setting initial series: %w", err)
+	}
 
 	return &Dash{
 		queryRange:    options.QueryRange,
@@ -69,12 +72,6 @@ func New(options opt.Options) (_ *Dash, err error) {
 func (d *Dash) Run(ctx context.Context, in <-chan promql.Matrix) error {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
-
-	quitter := func(k *terminalapi.Keyboard) {
-		if k.Key == 'q' || k.Key == 'Q' {
-			cancel()
-		}
-	}
 
 	terminal, err := tcell.New()
 	if err != nil {
@@ -109,6 +106,11 @@ func (d *Dash) Run(ctx context.Context, in <-chan promql.Matrix) error {
 		}
 	})
 
+	quitter := func(k *terminalapi.Keyboard) {
+		if k.Key == 'q' || k.Key == 'Q' {
+			cancel()
+		}
+	}
 	err = termdash.Run(
 		ctx,
 		terminal,
@@ -116,6 +118,7 @@ func (d *Dash) Run(ctx context.Context, in <-chan promql.Matrix) error {
 		termdash.KeyboardSubscriber(quitter),
 		termdash.RedrawInterval(redrawInterval),
 	)
+	cancel()
 	return errors.Join(err, group.Wait())
 }
 

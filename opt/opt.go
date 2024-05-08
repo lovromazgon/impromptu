@@ -1,28 +1,22 @@
 package opt
 
 import (
-	"io"
-	"os"
 	"time"
 )
 
-type Options struct {
-	LoggerWriter       io.Writer
-	ScrapeInterval     time.Duration
-	EvaluationInterval time.Duration
-	TargetURL          string
+const DataPath = "/tmp/impromptu"
 
-	QueryString   string
-	QueryRange    time.Duration
-	QueryInterval time.Duration
+type Options struct {
+	TargetURL   string
+	QueryString string
+
+	ScrapeInterval time.Duration
+	QueryRange     time.Duration
+	QueryInterval  time.Duration
 }
 
 var Defaults = Options{
-	LoggerWriter:       os.Stderr,
-	ScrapeInterval:     1 * time.Second,
-	EvaluationInterval: 1 * time.Minute,
-	// targetURL:          "http://localhost:8080/metrics",
-
-	QueryRange:    time.Minute * 5,
-	QueryInterval: time.Second,
+	ScrapeInterval: time.Second,
+	QueryRange:     time.Minute * 5,
+	QueryInterval:  time.Second,
 }
