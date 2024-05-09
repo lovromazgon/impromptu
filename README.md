@@ -1,5 +1,3 @@
-# Impromptu
-
 <p align="center">
     <picture>
         <source media="(prefers-color-scheme: dark)" srcset="https://github.com/lovromazgon/impromptu/blob/main/logo/impromptu-white.png">
