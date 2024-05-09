@@ -47,7 +47,7 @@ impromptu -t http://demo.do.prometheus.io:9100/metrics -q "rate(node_cpu_seconds
 
 ## Usage
 
-```sh
+```
 Usage:
     impromptu -t URL -q PROMQL_QUERY [-i DURATION] [-r DURATION]
 
