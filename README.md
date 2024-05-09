@@ -1,5 +1,13 @@
 # Impromptu
 
+<p align="center">
+    <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="https://github.com/lovromazgon/impromptu/blob/main/logo/impromptu-white.png">
+        <source media="(prefers-color-scheme: light)" srcset="https://github.com/lovromazgon/impromptu/blob/main/logo/impromptu-black.png">
+        <img alt="Impromptu logo" width="600" src="https://github.com/lovromazgon/impromptu/blob/main/logo/impromptu-black.png">
+    </picture>
+</p>
+
 [![License](https://img.shields.io/github/license/lovromazgon/impromptu)](https://github.com/ConduitIO/conduit/blob/main/LICENSE)
 [![Test](https://github.com/lovromazgon/impromptu/actions/workflows/test.yml/badge.svg)](https://github.com/lovromazgon/impromptu/actions/workflows/test.yml)
 [![Go Report Card](https://goreportcard.com/badge/github.com/lovromazgon/impromptu)](https://goreportcard.com/report/github.com/lovromazgon/impromptu)
