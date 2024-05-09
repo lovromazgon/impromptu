@@ -33,6 +33,7 @@ brews:
     repository:
       owner: lovromazgon
       name: homebrew-tap
+      token: "{{ .Env.TAP_GITHUB_TOKEN }}"
     directory: Formula
     test: |
       assert_match(version.to_s, shell_output("#{bin}/impromptu --version"))
