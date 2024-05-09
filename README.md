@@ -21,10 +21,16 @@ https://github.com/lovromazgon/impromptu/assets/8320753/088736b7-ac20-479e-b53c-
 
 ## Installation
 
-Download the binary from the [latest release](https://github.com/lovromazgon/impromptu/releases/latest).
+Install using homebrew:
+
+```sh
+brew install lovromazgon/tap/impromptu
+```
+
+Or download the binary manually from the [latest release](https://github.com/lovromazgon/impromptu/releases/latest).
 
 > [!NOTE]
-> When trying to run Impromptu on MacOS you will get a warning about a safety issue.
+> When downloading Impromptu manually on MacOS you will get a warning about a safety issue.
 > That's because Impromptu is currently not a signed binary, you have to do some
 > [extra steps](https://support.apple.com/en-us/102445#openanyway) to make it run.
 
@@ -70,7 +76,6 @@ Example:
 
 ## Roadmap
 
-- [ ] Homebrew formula
 - [ ] Remove initial 5 second delay (PR: https://github.com/prometheus/prometheus/pull/14073)
 - [ ] Support for multiple time series
 - [ ] Support for other charts (donut, bar chart)
