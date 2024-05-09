@@ -70,6 +70,7 @@ Example:
 
 ## Roadmap
 
+- [ ] Homebrew formula
 - [ ] Remove initial 5 second delay (PR: https://github.com/prometheus/prometheus/pull/14073)
 - [ ] Support for multiple time series
 - [ ] Support for other charts (donut, bar chart)
