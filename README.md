@@ -19,7 +19,7 @@ deploying Prometheus and Grafana, mostly during development and testing.
 
 https://github.com/lovromazgon/impromptu/assets/8320753/088736b7-ac20-479e-b53c-fe98118f8136
 
-## Install
+## Installation
 
 Download the binary from the [latest release](https://github.com/lovromazgon/impromptu/releases/latest).
 
@@ -33,6 +33,11 @@ Once you have downloaded impromptu, you can try it out using this runnable examp
 ```sh
 impromptu -t http://demo.do.prometheus.io:9100/metrics -q "rate(node_cpu_seconds_total{mode=\"idle\"}[5s])" -r 1m
 ```
+
+> [!IMPORTANT]
+> Impromptu embeds Prometheus under the hood to scrape metrics. Unfortunately,
+> Prometheus currently has a hardcoded delay of 5 seconds before it starts scraping, so you
+> need to wait before data starts to be displayed.
 
 ## Usage
 
@@ -63,11 +68,9 @@ Example:
     $ impromptu -t http://demo.do.prometheus.io:9100/metrics -q "rate(node_cpu_seconds_total{mode=\"idle\"}[5s])" -r 1m
 ```
 
-## Limitations
+## Roadmap
 
-Impromptu embeds Prometheus under the hood to scrape metrics. Unfortunately
-Prometheus has a hardcoded delay of 5 seconds before it starts scraping, so you
-need to wait before data starts to be displayed.
-
-Currently, only a single time series will be displayed, even if the PromQL query
-returns multiple.
+- [ ] Remove initial 5 second delay (PR: https://github.com/prometheus/prometheus/pull/14073)
+- [ ] Support for multiple time series
+- [ ] Support for other charts (donut, bar chart)
+- [ ] Display legend
