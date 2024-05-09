@@ -27,3 +27,12 @@ changelog:
       - '^go.mod:'
       - '^.github:'
       - Merge branch
+brews:
+  - name: impromptu
+    homepage: https://github.com/lovromazgon/homebrew-tap
+    repository:
+      owner: lovromazgon
+      name: homebrew-tap
+    directory: Formula
+    test: |
+      assert_match(version.to_s, shell_output("#{bin}/impromptu --version"))
