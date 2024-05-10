@@ -106,12 +106,12 @@ func initStderr() func() {
 	cleanup := func() {}
 
 	oldStderr := os.Stderr
-	err := os.MkdirAll(opt.DataPath, 0o664)
+	err := os.MkdirAll(opt.DataPath, 0o755)
 	if err != nil {
 		log.Printf("error creating data directory, logs will be written to stderr (can result in glitches): %v", err)
 		return cleanup
 	}
-	f, err := os.OpenFile(opt.DataPath+"/impromptu.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o664)
+	f, err := os.OpenFile(opt.DataPath+"/impromptu.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o755)
 	if err != nil {
 		log.Printf("error opening log file, logs will be written to stderr (can result in glitches): %v", err)
 		return cleanup
