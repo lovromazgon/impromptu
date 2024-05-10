@@ -15,6 +15,7 @@ import (
 	"github.com/mum4k/termdash/linestyle"
 	"github.com/mum4k/termdash/terminal/tcell"
 	"github.com/mum4k/termdash/terminal/terminalapi"
+	"github.com/mum4k/termdash/widgets/gauge"
 	"github.com/mum4k/termdash/widgets/linechart"
 	"github.com/prometheus/prometheus/promql"
 	"golang.org/x/sync/errgroup"
@@ -78,8 +79,10 @@ func (d *Dash) Run(ctx context.Context, in <-chan promql.Matrix) error {
 		return fmt.Errorf("error creating terminal: %w", err)
 	}
 	defer terminal.Close()
+
 	c, err := container.New(
 		terminal,
+		container.ID("root"),
 		container.Border(linestyle.Light),
 		container.BorderTitle("PRESS Q TO QUIT"),
 		container.PlaceWidget(d.chart),
@@ -89,6 +92,14 @@ func (d *Dash) Run(ctx context.Context, in <-chan promql.Matrix) error {
 	}
 
 	group, ctx := errgroup.WithContext(ctx)
+
+	// ---- remove this once the initial Prometheus delay is fixed ----
+	err = d.setupInitialDelayGauge(ctx, c, group)
+	if err != nil {
+		return err
+	}
+	// ----------------------------------------------------------------
+
 	group.Go(func() error {
 		return d.drawLineChart(ctx)
 	})
@@ -196,4 +207,64 @@ func (d *Dash) xLabels() map[int]string {
 		labels[i] = time.UnixMilli(t).Format("15:04:05")
 	}
 	return labels
+}
+
+// setupInitialDelayGauge displays a gauge to inform the user about the initial
+// scrape delay.
+func (d *Dash) setupInitialDelayGauge(ctx context.Context, c *container.Container, group *errgroup.Group) error {
+	const initialDelay = 5 // Prometheus has a hardcoded 5-second delay before it starts the first scrape
+	initialGaugeText := "%d - Please wait for Prometheus to start scraping the target..."
+	initialGauge, err := gauge.New(
+		gauge.Height(3),
+		gauge.TextLabel(fmt.Sprintf(initialGaugeText, initialDelay)),
+		gauge.Color(cell.ColorGreen),
+		gauge.FilledTextColor(cell.ColorBlack),
+		gauge.EmptyTextColor(cell.ColorGreen),
+		gauge.HideTextProgress(),
+		gauge.Border(linestyle.Light),
+	)
+	if err != nil {
+		return fmt.Errorf("error creating initial gauge: %w", err)
+	}
+	err = initialGauge.Absolute(0, initialDelay)
+	if err != nil {
+		return fmt.Errorf("error setting initial gauge: %w", err)
+	}
+	err = c.Update(
+		"root",
+		container.Border(linestyle.Light),
+		container.BorderTitle("PRESS Q TO QUIT"),
+		container.PlaceWidget(initialGauge),
+	)
+	if err != nil {
+		return fmt.Errorf("error updating container: %w", err)
+	}
+
+	group.Go(func() error {
+		for i := 0; i < initialDelay; i++ {
+			select {
+			case <-ctx.Done():
+				return ctx.Err()
+			case <-time.After(time.Second):
+				err := initialGauge.Absolute(
+					i+1, initialDelay,
+					gauge.TextLabel(fmt.Sprintf(initialGaugeText, initialDelay-i-1)),
+				)
+				if err != nil {
+					return fmt.Errorf("error updating gauge: %w", err)
+				}
+			}
+		}
+		err := c.Update(
+			"root",
+			container.Border(linestyle.Light),
+			container.BorderTitle("PRESS Q TO QUIT"),
+			container.PlaceWidget(d.chart),
+		)
+		if err != nil {
+			return fmt.Errorf("error updating container: %w", err)
+		}
+		return nil
+	})
+	return nil
 }
