@@ -5,7 +5,7 @@ go 1.22.2
 require (
 	github.com/go-kit/log v0.2.1
 	github.com/mum4k/termdash v0.20.0
-	github.com/prometheus/client_golang v1.20.4
+	github.com/prometheus/client_golang v1.20.5
 	github.com/prometheus/common v0.60.0
 	github.com/prometheus/prometheus v0.54.1
 	golang.org/x/sync v0.8.0
