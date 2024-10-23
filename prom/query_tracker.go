@@ -15,6 +15,8 @@ func NewSequentialQueryTracker() SequentialQueryTracker {
 func (s SequentialQueryTracker) GetMaxConcurrent() int {
 	return 1
 }
+func (s SequentialQueryTracker) Delete(int)   { <-s }
+func (s SequentialQueryTracker) Close() error { return nil }
 
 func (s SequentialQueryTracker) Insert(ctx context.Context, _ string) (int, error) {
 	select {
@@ -23,8 +25,4 @@ func (s SequentialQueryTracker) Insert(ctx context.Context, _ string) (int, erro
 	case s <- struct{}{}:
 		return 1, nil
 	}
-}
-
-func (s SequentialQueryTracker) Delete(int) {
-	<-s
 }

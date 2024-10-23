@@ -109,6 +109,7 @@ func (p *Prom) init(cfg config.Config, promqlEngineOpts promql.EngineOpts) (err 
 	mgr, err := scrape.NewManager(
 		&scrape.Options{},
 		log.With(p.logger, "component", "scrape manager"),
+		nil,
 		db,
 		prometheus.DefaultRegisterer,
 	)
