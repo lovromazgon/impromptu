@@ -9,7 +9,7 @@ require (
 	github.com/prometheus/common v0.62.0
 	github.com/prometheus/prometheus v0.55.1
 	golang.org/x/sync v0.11.0
-	golang.org/x/time v0.9.0
+	golang.org/x/time v0.10.0
 )
 
 require (
