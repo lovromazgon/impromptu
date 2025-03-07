@@ -40,11 +40,6 @@ Once you have downloaded impromptu, you can try it out using this runnable examp
 impromptu -t http://demo.do.prometheus.io:9100/metrics -q "rate(node_cpu_seconds_total{mode=\"idle\"}[5s])" -r 1m
 ```
 
-> [!IMPORTANT]
-> Impromptu embeds Prometheus under the hood to scrape metrics. Unfortunately,
-> Prometheus currently has a hardcoded delay of 5 seconds before it starts scraping, so you
-> need to wait before data starts to be displayed.
-
 ## Usage
 
 ```
@@ -76,7 +71,7 @@ Example:
 
 ## Roadmap
 
-- [ ] Remove initial 5 second delay (PR: https://github.com/prometheus/prometheus/pull/14073)
+- [X] Remove initial 5 second delay (PR: https://github.com/prometheus/prometheus/pull/14073)
 - [ ] Support for multiple time series
 - [ ] Support for other charts (donut, bar chart)
 - [ ] Display legend

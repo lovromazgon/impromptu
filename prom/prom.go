@@ -3,11 +3,11 @@ package prom
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"net/url"
 	"os"
 	"time"
 
-	"github.com/go-kit/log"
 	"github.com/lovromazgon/impromptu/opt"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/common/model"
@@ -21,7 +21,7 @@ import (
 )
 
 type Prom struct {
-	logger        log.Logger
+	logger        *slog.Logger
 	labels        model.LabelSet
 	queryString   string
 	queryRange    time.Duration
@@ -34,17 +34,15 @@ type Prom struct {
 }
 
 func New(options opt.Options) (*Prom, error) {
-	logger := log.NewLogfmtLogger(os.Stderr)
+	logger := slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{
+		AddSource: true,
+		Level:     slog.LevelDebug,
+	}))
 
-	cfg := config.DefaultConfig
-	cfg.GlobalConfig.ScrapeInterval = model.Duration(options.ScrapeInterval)
-
-	scrapeCfg := config.DefaultScrapeConfig
-	scrapeCfg.JobName = "impromptu"
-	cfg.ScrapeConfigs = []*config.ScrapeConfig{&scrapeCfg}
+	cfg := prometheusConfig(options, logger)
 
 	promqlEngineOpts := promql.EngineOpts{
-		Logger:             log.With(logger, "component", "query engine"),
+		Logger:             logger.With("component", "query engine"),
 		Reg:                prometheus.DefaultRegisterer,
 		MaxSamples:         50000000,
 		Timeout:            options.QueryInterval * 2,
@@ -87,10 +85,28 @@ func New(options opt.Options) (*Prom, error) {
 	return p, nil
 }
 
-func (p *Prom) init(cfg config.Config, promqlEngineOpts promql.EngineOpts) (err error) {
+func prometheusConfig(opt opt.Options, logger *slog.Logger) *config.Config {
+	promCfg, err := config.Load("", logger)
+	if err != nil {
+		panic(err) // Empty config is valid, this error should never occur.
+	}
+
+	promCfg.GlobalConfig.ScrapeInterval = model.Duration(opt.ScrapeInterval)
+	promCfg.GlobalConfig.ScrapeTimeout = model.Duration(opt.ScrapeInterval)
+
+	scrapeCfg := config.DefaultScrapeConfig
+	scrapeCfg.JobName = "impromptu"
+	scrapeCfg.ScrapeInterval = promCfg.GlobalConfig.ScrapeInterval
+	scrapeCfg.ScrapeTimeout = promCfg.GlobalConfig.ScrapeTimeout
+
+	promCfg.ScrapeConfigs = append(promCfg.ScrapeConfigs, &scrapeCfg)
+	return promCfg
+}
+
+func (p *Prom) init(cfg *config.Config, promqlEngineOpts promql.EngineOpts) (err error) {
 	db, err := tsdb.Open(
 		opt.DataPath,
-		log.With(p.logger, "component", "tsdb"),
+		p.logger.With("component", "tsdb"),
 		prometheus.DefaultRegisterer,
 		tsdb.DefaultOptions(),
 		nil,
@@ -101,14 +117,20 @@ func (p *Prom) init(cfg config.Config, promqlEngineOpts promql.EngineOpts) (err 
 	defer func() {
 		if err != nil {
 			if dbErr := db.Close(); dbErr != nil {
-				_ = p.logger.Log("msg", "error closing storage", "err", dbErr)
+				p.logger.Error("error closing storage", "error", dbErr)
 			}
 		}
 	}()
 
 	mgr, err := scrape.NewManager(
-		&scrape.Options{},
-		log.With(p.logger, "component", "scrape manager"),
+		&scrape.Options{
+			// Need to set the reload interval to a small value to ensure that
+			// the scrape manager starts scraping immediately and not after 5
+			// seconds (default).
+			// https://github.com/prometheus/prometheus/pull/14073
+			DiscoveryReloadInterval: model.Duration(time.Millisecond * 100),
+		},
+		p.logger.With("component", "scrape manager"),
 		nil,
 		db,
 		prometheus.DefaultRegisterer,
@@ -117,7 +139,7 @@ func (p *Prom) init(cfg config.Config, promqlEngineOpts promql.EngineOpts) (err 
 		return fmt.Errorf("error creating scrape manager: %w", err)
 	}
 
-	err = mgr.ApplyConfig(&cfg)
+	err = mgr.ApplyConfig(cfg)
 	if err != nil {
 		return fmt.Errorf("error applying config: %w", err)
 	}
