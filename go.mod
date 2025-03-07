@@ -1,7 +1,6 @@
 module github.com/lovromazgon/impromptu
 
-go 1.22.2
-toolchain go1.23.7
+go 1.24.0
 
 require (
 	github.com/go-kit/log v0.2.1
