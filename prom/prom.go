@@ -225,7 +225,7 @@ func (p *Prom) execQuery(ctx context.Context) (promql.Query, error) {
 	}
 	if len(m) == 0 {
 		q.Close()
-		return nil, nil
+		return nil, nil //nolint:nilnil // no error, no result
 	}
 
 	select {

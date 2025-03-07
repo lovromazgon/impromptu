@@ -49,6 +49,7 @@ linters:
     - bodyclose
     - containedctx
     - contextcheck
+    - copyloopvar
     - decorder
     # - depguard
     - dogsled
@@ -59,9 +60,7 @@ linters:
     - errchkjson
     - errname
     - errorlint
-    - execinquery
     - exhaustive
-    - exportloopref
     # - forbidigo
     - forcetypeassert
     - funlen
@@ -73,7 +72,7 @@ linters:
     - goconst
     - gocritic
     - godot
-    - goerr113
+    - err113
     - gofmt
     - gofumpt
     - goheader
@@ -111,13 +110,13 @@ linters:
     - sqlclosecheck
     - staticcheck
     - stylecheck
-    - tenv
     - testableexamples
     - thelper
     - unconvert
     - unparam
     - unused
     - usestdlibvars
+    - usetesting
     - wastedassign
     - whitespace
     - wrapcheck
