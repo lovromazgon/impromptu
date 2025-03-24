@@ -17,7 +17,7 @@ in the CLI.
 You can use Impromptu to get an insight into the metrics of a service without
 deploying Prometheus and Grafana, mostly during development and testing.
 
-https://github.com/lovromazgon/impromptu/assets/8320753/088736b7-ac20-479e-b53c-fe98118f8136
+![demo](https://github.com/user-attachments/assets/223de1f0-b7b6-4591-8212-e7307f7aad0c)
 
 ## Installation
 
