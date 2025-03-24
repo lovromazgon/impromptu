@@ -37,7 +37,7 @@ Or download the binary manually from the [latest release](https://github.com/lov
 Once you have downloaded impromptu, you can try it out using this runnable example:
 
 ```sh
-impromptu -t http://demo.do.prometheus.io:9100/metrics -q "rate(node_cpu_seconds_total{mode=\"idle\"}[5s])" -r 1m
+impromptu -t https://node.demo.prometheus.io/metrics -q "rate(node_cpu_seconds_total{mode=\"idle\"}[5s])" -r 1m
 ```
 
 ## Usage
@@ -66,7 +66,7 @@ function. It represents a time interval, e.g. "5m" for 5 minutes, "1h" for 1
 hour, "30s" for 30 seconds, "1h 2m 3s" for 1 hour, 2 minutes and 3 seconds etc.
 
 Example:
-    $ impromptu -t http://demo.do.prometheus.io:9100/metrics -q "rate(node_cpu_seconds_total{mode=\"idle\"}[5s])" -r 1m
+    $ impromptu -t https://node.demo.prometheus.io/metrics -q "rate(node_cpu_seconds_total{mode=\"idle\"}[5s])" -r 1m
 ```
 
 ## Roadmap
