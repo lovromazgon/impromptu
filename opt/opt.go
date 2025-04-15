@@ -15,7 +15,11 @@ type Options struct {
 	QueryInterval  time.Duration
 }
 
+//nolint:gochecknoglobals // default options
 var Defaults = Options{
+	TargetURL:   "",
+	QueryString: "",
+
 	ScrapeInterval: time.Second,
 	QueryRange:     time.Minute * 5,
 	QueryInterval:  time.Second,
