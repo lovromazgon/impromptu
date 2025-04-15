@@ -35,7 +35,7 @@ type Dash struct {
 	m    sync.Mutex
 }
 
-func New(options opt.Options) (_ *Dash, err error) {
+func New(options opt.Options) (*Dash, error) {
 	lc, err := linechart.New(
 		linechart.AxesCellOpts(cell.FgColor(cell.ColorCyan)),
 		linechart.YLabelCellOpts(cell.FgColor(cell.ColorCyan)),
@@ -66,6 +66,7 @@ func New(options opt.Options) (_ *Dash, err error) {
 		timestamps: timestamps,
 
 		data: make(map[int64]float64),
+		m:    sync.Mutex{},
 	}, nil
 }
 

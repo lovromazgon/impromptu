@@ -35,8 +35,9 @@ type Prom struct {
 
 func New(options opt.Options) (*Prom, error) {
 	logger := slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{
-		AddSource: true,
-		Level:     slog.LevelDebug,
+		AddSource:   true,
+		Level:       slog.LevelDebug,
+		ReplaceAttr: nil,
 	}))
 
 	cfg := prometheusConfig(options, logger)
@@ -53,9 +54,10 @@ func New(options opt.Options) (*Prom, error) {
 		},
 		// EnableAtModifier and EnableNegativeOffset have to be
 		// always on for regular PromQL as of Prometheus v2.33.
-		EnableAtModifier:     true,
-		EnableNegativeOffset: true,
-		EnablePerStepStats:   false,
+		EnableAtModifier:         true,
+		EnableNegativeOffset:     true,
+		EnablePerStepStats:       false,
+		EnableDelayedNameRemoval: false,
 	}
 
 	targetURL, err := url.Parse(options.TargetURL)
@@ -68,6 +70,7 @@ func New(options opt.Options) (*Prom, error) {
 		model.MetricsPathLabel: model.LabelValue(targetURL.Path),
 	}
 
+	//nolint:exhaustruct // the rest is set in init
 	p := &Prom{
 		logger: logger,
 		labels: l,
@@ -123,6 +126,7 @@ func (p *Prom) init(cfg *config.Config, promqlEngineOpts promql.EngineOpts) (err
 	}()
 
 	mgr, err := scrape.NewManager(
+		//nolint:exhaustruct // the rest is left as default
 		&scrape.Options{
 			// Need to set the reload interval to a small value to ensure that
 			// the scrape manager starts scraping immediately and not after 5
@@ -223,6 +227,8 @@ func (p *Prom) Run(ctx context.Context) error {
 // execQuery executes the query and sends the result to the output channel.
 // It returns the query object so that it can be closed when the next query is
 // executed.
+//
+//nolint:ireturn // We get the query object from the PromQL engine.
 func (p *Prom) execQuery(ctx context.Context) (promql.Query, error) {
 	now := time.Now()
 	q, err := p.promqlEngine.NewRangeQuery(
