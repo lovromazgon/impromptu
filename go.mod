@@ -5,8 +5,8 @@ go 1.24.2
 require (
 	github.com/mum4k/termdash v0.20.0
 	github.com/prometheus/client_golang v1.22.0
-	github.com/prometheus/common v0.62.0
-	github.com/prometheus/prometheus v0.303.0
+	github.com/prometheus/common v0.63.0
+	github.com/prometheus/prometheus v0.303.1
 	golang.org/x/sync v0.13.0
 	golang.org/x/time v0.11.0
 )
