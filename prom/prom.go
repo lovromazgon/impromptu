@@ -58,6 +58,7 @@ func New(options opt.Options) (*Prom, error) {
 		EnableNegativeOffset:     true,
 		EnablePerStepStats:       false,
 		EnableDelayedNameRemoval: false,
+		EnableTypeAndUnitLabels:  false,
 	}
 
 	targetURL, err := url.Parse(options.TargetURL)
