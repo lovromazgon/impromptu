@@ -8,10 +8,14 @@ linters:
     - godox
     - mnd
     - nlreturn
+    - noinlineerr
     - nonamedreturns
     - varnamelen
     - wsl
+    - wsl_v5
   settings:
+    funlen:
+      lines: 80
     gocyclo:
       min-complexity: 20
     nolintlint:
