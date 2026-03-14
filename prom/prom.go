@@ -59,6 +59,7 @@ func New(options opt.Options) (*Prom, error) {
 		EnablePerStepStats:       false,
 		EnableDelayedNameRemoval: false,
 		EnableTypeAndUnitLabels:  false,
+		FeatureRegistry:          nil,
 	}
 
 	targetURL, err := url.Parse(options.TargetURL)
@@ -137,6 +138,7 @@ func (p *Prom) init(cfg *config.Config, promqlEngineOpts promql.EngineOpts) (err
 		},
 		p.logger.With("component", "scrape manager"),
 		nil,
+		db,
 		db,
 		prometheus.DefaultRegisterer,
 	)
