@@ -1,6 +1,6 @@
 module github.com/lovromazgon/impromptu
 
-go 1.25.0
+go 1.26.0
 
 require (
 	github.com/mum4k/termdash v0.20.0
