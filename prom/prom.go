@@ -138,7 +138,7 @@ func (p *Prom) init(cfg *config.Config, promqlEngineOpts promql.EngineOpts) (err
 		},
 		p.logger.With("component", "scrape manager"),
 		nil,
-		db,
+		nil,
 		db,
 		prometheus.DefaultRegisterer,
 	)
